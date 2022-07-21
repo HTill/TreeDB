@@ -9,7 +9,13 @@ import persistent.list
 import transaction
 from BTrees._OOBTree import OOBTree
 
-def open_StorageTree_DB(path:str='',name:str='StorageTreeDB'):
+def open_StorageTree_DB(path:str='',name:str='StorageTreeDB',new:bool=False):
+
+    if new == True:
+        import shutil
+        from os import mkdir
+        shutil.rmtree(path)
+        mkdir(path)
 
     import ZODB
     import ZODB.FileStorage
@@ -664,7 +670,7 @@ def load_from_file(path):
     return oject
 
 
-def load_files_directory(audio_tree:StorageTree,dir_path:str,file_type_pfo_name:str='_pfo_audio_wav'):
+def load_files_directory(audio_tree:StorageTree,dir_path:str,file_type_pfo_name:str='_pfo_audio_wav',file_extension:str='wav'):
 
     root_folder = dir_path.split(os.sep)[-1]
 
@@ -675,9 +681,12 @@ def load_files_directory(audio_tree:StorageTree,dir_path:str,file_type_pfo_name:
             last_node = audio_tree.gns(root_split[root_idx:])
 
             for file in files:
-                cur_node = last_node.gn(file)
 
-                cur_node.ga(file_type_pfo_name,PathFileObj(root,file))
+                if file.endswith(f'.{file_extension}'):
+
+                    cur_node = last_node.gn(file)
+
+                    cur_node.ga(file_type_pfo_name,PathFileObj(root,file))
 
 
 def load_files_folder(audio_tree:str,folder_path:str,parameter_seperator:str='_~_',filepath_attribute:str='_pfo_audio_wav',file_extension:str='wav'):
@@ -686,7 +695,7 @@ def load_files_folder(audio_tree:str,folder_path:str,parameter_seperator:str='_~
 
     for file in folder_file_list:
 
-        if f'.{file_extension}' in file:
+        if file.endswith(f'.{file_extension}'):
 
             cur_file = file[0:-4]
 
