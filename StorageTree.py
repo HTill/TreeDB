@@ -552,24 +552,39 @@ class PathFileObj(persistent.Persistent):
                 self.root_path_list = persistent.list.PersistentList(['']) + self.root_path_list
 
 def filter_node_list(filter_str:str,node_list:list,invers=False):
+    import re
 
     filtered_node_list = []
 
     for node in node_list:
         if invers:
-            if not (filter_str in node.key):
+            if (re.search(filter_str,node.key) is None):
                 filtered_node_list.append(node)    
         else:
-            if filter_str in node.key:
+            if not (re.search(filter_str,node.key) is None):
                 filtered_node_list.append(node)
 
     return filtered_node_list
-
 
 def add_file(node,filepath_attribute:str='_pfo_audio_wav',root:str='',file:str='',filepath:str=''):
 
     pfo = PathFileObj(root,file,filepath)
     node.ga(filepath_attribute,pfo)
+
+def rename_file(node,filepath_attribute:str='_pfo_audio_wav',new_root:str='',new_file:str='',new_filepath:str=''):
+
+    pfo = node.ga(filepath_attribute)
+
+    pfo_filepath = pfo.filepath
+
+    if new_root == '':
+        pfo.file = new_file
+    elif new_file == '':
+        pfo.root = new_root
+    else:
+        pfo.filepath = new_filepath
+
+    os.replace(pfo_filepath,pfo.filepath)
 
 class FileReader():
 
@@ -980,3 +995,10 @@ if __name__ == '__main__':
         print(node_list)
         for node in node_list:
             print(node.gps())
+
+
+
+
+
+    
+

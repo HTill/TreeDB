@@ -1,0 +1,17 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "TreeDB"
+version = "1"
+authors = [
+    {name = "Till Spitz", email = "tillh.spitz@t-online.de"},
+]
+readme = "README.md"
+requires-python = ">=3.7"
+
+dependencies = [
+    "numpy",
+    "ZODB"
+]
