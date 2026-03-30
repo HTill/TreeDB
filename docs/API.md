@@ -106,19 +106,6 @@ Typical use case:
 - Creates or upgrades the final node in a path to a `DataNode`.
 - This is the easiest way to create sensor capture nodes with automatic backend setup.
 
-## Bulk loading helpers
-
-These file-indexing helpers live in `lotdb.utils`.
-
-### `lotdb.utils.load_files_folder()`
-Creates nodes from filenames split by a separator.
-
-### `lotdb.utils.load_files_directory()`
-Creates nodes from folder hierarchy and filenames.
-
 ## Data/export helpers
 
-- `filter_node_list()`
-- `tree_to_dataframe()`
-- `node_list_to_dataframe()`
-- `node_process_cruncher()`
+Bulk loading, dataframe export, filtering, and processing helpers now live in `lotproc`.
