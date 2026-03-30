@@ -430,6 +430,7 @@ class DataNode(BaseNode):
         chunks: Optional[tuple[int, ...]] = None,
         zarr_store_path: str | None = None,
         content_type: str = "application/x-npy",
+        if_exists: str = "replace",
     ):
         from .measurements import DataWriter
 
@@ -444,6 +445,38 @@ class DataNode(BaseNode):
             data_attribute=data_attribute,
         )
 
+        if if_exists not in {"replace", "error", "append"}:
+            raise ValueError("if_exists must be one of: 'replace', 'error', 'append'.")
+
+        if if_exists == "error" and self.has_data(data_attribute):
+            raise ValueError(f"Data attribute {data_attribute!r} already exists.")
+
+        if if_exists == "append":
+            if not self.has_data(data_attribute):
+                return DataWriter.write_array(
+                    self,
+                    data,
+                    samplerate_hz=samplerate_hz,
+                    data_attribute=data_attribute,
+                    backend=backend,
+                    metadata=metadata,
+                    database=database,
+                    zarr_store_path=zarr_store_path,
+                    chunks=chunks,
+                    content_type=content_type,
+                )
+
+            return DataWriter.append_array(
+                self,
+                data,
+                data_attribute=data_attribute,
+                database=database,
+                metadata=metadata,
+                chunks=chunks,
+                zarr_store_path=zarr_store_path,
+                content_type=content_type,
+            )
+
         return DataWriter.write_array(
             self,
             data,
@@ -456,6 +489,24 @@ class DataNode(BaseNode):
             chunks=chunks,
             content_type=content_type,
         )
+
+    def replace_data(self, data: Any, **kwargs):
+        kwargs["if_exists"] = "replace"
+        return self.write_data(data, **kwargs)
+
+    def append_data(self, data: Any, **kwargs):
+        kwargs["if_exists"] = "append"
+        return self.write_data(data, **kwargs)
+
+    def has_data(self, data_attribute: str | None = None) -> bool:
+        from .measurements import DataWriter
+
+        return DataWriter.has_data(self, data_attribute=data_attribute or self.data_attribute)
+
+    def delete_data(self, data_attribute: str | None = None) -> None:
+        from .measurements import DataWriter
+
+        DataWriter.delete_data(self, data_attribute=data_attribute or self.data_attribute)
 
     def ingest_file(
         self,

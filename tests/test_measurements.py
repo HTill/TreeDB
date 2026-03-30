@@ -123,16 +123,6 @@ def test_get_data_node_creates_specialized_node_and_uses_defaults(tmp_path):
     reopened.close()
 
 
-def test_data_reader_writer_cover_legacy_file_helpers(tmp_path):
-    node = DataNode(key="capture", samplerate_hz=1)
-    array = np.arange(6, dtype=np.float32).reshape(3, 2)
-
-    DataWriter.write_array_npy(root=str(tmp_path), node=node, array=array, filename="capture.npy")
-
-    restored = np.load(node.ga("_pfo_array_npy").filepath)
-    np.testing.assert_array_equal(restored, array)
-
-
 def test_attach_file_ingests_npy_into_backend(tmp_path):
     node = DataNode(key="capture")
     expected = np.arange(12, dtype=np.float32).reshape(6, 2)
@@ -172,3 +162,76 @@ def test_attach_file_ingests_csv_into_table_payload(tmp_path):
     pd.testing.assert_frame_equal(restored, expected)
     assert data_object.get_metadata("payload_kind") == "table"
     assert node.get_attribute("_source_format") == "csv"
+
+
+def test_data_node_supports_multiple_payloads_on_same_node(tmp_path):
+    db = LOTDB(path=str(tmp_path), name="multi_payload.fs", new=True)
+    tree = db.open_connection()
+    data_node = tree.get_data_node(["session", "capture_multi"], samplerate_hz=10, backend="blob")
+
+    audio = np.arange(20, dtype=np.float32).reshape(10, 2)
+    control = np.arange(10, dtype=np.float32).reshape(10, 1)
+
+    data_node.write_data(audio, database=db, data_attribute="audio")
+    data_node.write_data(control, database=db, data_attribute="control")
+
+    np.testing.assert_array_equal(data_node.read_data(data_attribute="audio"), audio)
+    np.testing.assert_array_equal(data_node.read_data(data_attribute="control"), control)
+
+    db.close_connection()
+    db.close()
+
+
+def test_write_data_if_exists_error_raises(tmp_path):
+    db = LOTDB(path=str(tmp_path), name="exists_error.fs", new=True)
+    tree = db.open_connection()
+    data_node = tree.get_data_node(["session", "capture_error"], samplerate_hz=5, backend="blob")
+
+    data_node.write_data(np.arange(6, dtype=np.float32).reshape(3, 2), database=db)
+
+    try:
+        data_node.write_data(np.arange(6, dtype=np.float32).reshape(3, 2), database=db, if_exists="error")
+    except ValueError:
+        pass
+    else:
+        raise AssertionError("write_data(..., if_exists='error') should raise when data exists")
+
+    db.close_connection()
+    db.close()
+
+
+def test_append_data_extends_existing_array_payload(tmp_path):
+    db = LOTDB(path=str(tmp_path), name="append.fs", new=True)
+    tree = db.open_connection()
+    data_node = tree.get_data_node(["session", "capture_append"], samplerate_hz=4, backend="blob")
+
+    first = np.arange(8, dtype=np.float32).reshape(4, 2)
+    second = np.arange(8, 16, dtype=np.float32).reshape(4, 2)
+
+    data_node.write_data(first, database=db)
+    data_node.append_data(second, database=db)
+
+    expected = np.concatenate([first, second], axis=0)
+    np.testing.assert_array_equal(data_node.read_data(), expected)
+    np.testing.assert_array_equal(data_node.read_seconds(1.0, 2.0), expected[4:8])
+
+    db.close_connection()
+    db.close()
+
+
+def test_has_data_and_delete_data_control_payload_lifecycle(tmp_path):
+    db = LOTDB(path=str(tmp_path), name="lifecycle.fs", new=True)
+    tree = db.open_connection()
+    data_node = tree.get_data_node(["session", "capture_lifecycle"], samplerate_hz=2, backend="blob")
+
+    assert data_node.has_data() is False
+
+    data_node.write_data(np.arange(4, dtype=np.float32).reshape(2, 2), database=db)
+    assert data_node.has_data() is True
+
+    data_node.delete_data()
+    assert data_node.has_data() is False
+    assert data_node.get_attribute("data") is None
+
+    db.close_connection()
+    db.close()

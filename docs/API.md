@@ -46,6 +46,8 @@ Use:
 
 This loads the external file, converts it into the configured backend representation, and stores source metadata on the node attributes.
 
+The older direct file-writing helper methods were removed in favor of backend-first ingestion.
+
 ## Blob helpers
 
 ### `BlobObject`
@@ -87,9 +89,18 @@ Typical use case:
 - Stores default data configuration like backend, sample rate, and data attribute name.
 - Convenience methods:
   - `write_data(...)`
+  - `replace_data(...)`
+  - `append_data(...)`
+  - `has_data()`
+  - `delete_data()`
   - `read_data(...)`
   - `read_seconds(...)`
   - `iter_data_blocks(...)`
+
+`write_data(...)` supports explicit payload policies:
+- `if_exists="replace"`
+- `if_exists="error"`
+- `if_exists="append"`
 
 ### `BaseNode.get_data_node()`
 - Creates or upgrades the final node in a path to a `DataNode`.

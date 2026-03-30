@@ -99,6 +99,9 @@ data = np.random.randn(2000, 6).astype("float32")
 capture_1.write_data(data, database=db)
 capture_2.write_data(data * 0.5, database=db)
 
+# same node, second payload
+capture_1.write_data(np.random.randn(2000, 2).astype("float32"), database=db, data_attribute="control")
+
 window = capture_1.read_seconds(1.0, 2.0)
 
 for block in capture_1.iter_data_blocks(0.5, block_unit="seconds"):
@@ -137,6 +140,10 @@ Use `BaseNode` when you only need:
 
 Use `DataNode` when you want the node itself to own:
 - `write_data(...)`
+- `replace_data(...)`
+- `append_data(...)`
+- `has_data()`
+- `delete_data()`
 - `read_data(...)`
 - `read_seconds(...)`
 - `iter_data_blocks(...)`
@@ -163,11 +170,32 @@ DataWriter.write_array(
 signal = DataReader.read_interval(node, "signal", 100, 200)
 ```
 
+`write_data(...)` supports explicit payload policies:
+- `if_exists="replace"` (default)
+- `if_exists="error"`
+- `if_exists="append"`
+
+This is especially useful when one `DataNode` stores multiple payloads such as:
+- `audio`
+- `control`
+
+Example:
+
+```python
+capture.write_data(audio, database=db, data_attribute="audio", if_exists="replace")
+capture.write_data(control, database=db, data_attribute="control", if_exists="replace")
+
+capture.append_data(more_audio, database=db, data_attribute="audio")
+
+if capture.has_data("control"):
+    capture.delete_data("control")
+```
+
 ## File ingestion
 
 External files are now treated as ingestion inputs.
 
-`DataWriter.attach_file(...)` loads the file, converts it into the configured backend representation, and stores source metadata on the node attributes.
+`DataWriter.attach_file(...)` or `DataNode.attach_file(...)` loads the file, converts it into the configured backend representation, and stores source metadata on the node attributes.
 
 After that, reads happen only through the backend:
 
@@ -189,6 +217,8 @@ Typical source attributes written onto the node:
 - `_source_format`
 - `_source_filename`
 - `_source_samplerate_hz` for wav files
+
+The older direct file-writing helper methods were removed to keep the public API focused on backend-managed data and ingestion.
 
 ## Why LOTDB instead of only HDF5/Zarr?
 

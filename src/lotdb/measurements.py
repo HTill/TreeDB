@@ -8,7 +8,7 @@ from typing import Any, Iterable, Iterator, Mapping, Optional, cast
 
 import persistent
 from BTrees.OOBTree import OOBTree
-from numpy import asarray, ndarray, save
+from numpy import asarray, concatenate, ndarray
 
 from .blobs import BlobObject
 from .paths import PathFileObj
@@ -276,6 +276,60 @@ class DataObject(persistent.Persistent):
 
 class DataWriter:
     @staticmethod
+    def has_data(node, data_attribute: str = "data") -> bool:
+        return str(data_attribute) in node.attribute_storage and node.get_attribute(data_attribute) is not None
+
+    @staticmethod
+    def delete_data(node, data_attribute: str = "data") -> None:
+        node.delete_attribute(data_attribute)
+
+    @staticmethod
+    def append_array(
+        node,
+        array: ndarray,
+        data_attribute: str = "data",
+        database=None,
+        metadata: Optional[Mapping[str, Any]] = None,
+        chunks: Optional[tuple[int, ...]] = None,
+        zarr_store_path: str | PathFileObj | None = None,
+        content_type: str = "application/x-npy",
+    ) -> DataObject:
+        existing = node.get_attribute(data_attribute)
+        if existing is None:
+            raise KeyError(f"Data attribute {data_attribute!r} not found for append.")
+
+        payload_kind = existing.get_metadata("payload_kind", "array")
+        if payload_kind != "array":
+            raise ValueError("append_data is only supported for array payloads.")
+
+        existing_array = existing.read_interval()
+        array = asarray(array)
+        if existing_array.ndim != array.ndim:
+            raise ValueError("Appended array must have the same dimensionality as existing data.")
+        if existing_array.shape[1:] != array.shape[1:]:
+            raise ValueError("Appended array must match all non-time dimensions of existing data.")
+
+        merged = asarray(concatenate([existing_array, array], axis=0))
+
+        merged_metadata = existing.metadata_dict()
+        if metadata:
+            merged_metadata.update(metadata)
+
+        return DataWriter.write_array(
+            node,
+            merged,
+            samplerate_hz=existing.samplerate_hz,
+            data_attribute=data_attribute,
+            backend=existing.backend,
+            metadata=merged_metadata,
+            database=database,
+            zarr_store_path=zarr_store_path or existing.store_path,
+            dataset_path=existing.dataset_path,
+            chunks=chunks,
+            content_type=content_type,
+        )
+
+    @staticmethod
     def attach_file_reference(
         node,
         filepath_attribute: str = "_pfo_audio_wav",
@@ -314,59 +368,6 @@ class DataWriter:
             chunks=chunks,
             text_encoding=text_encoding,
         )
-
-    @staticmethod
-    def rename_file(
-        node,
-        filepath_attribute: str = "_pfo_audio_wav",
-        new_root: str = "",
-        new_file: str = "",
-        new_filepath: str = "",
-    ) -> None:
-        pfo = node.ga(filepath_attribute)
-        old_filepath = pfo.filepath
-
-        if new_filepath:
-            pfo.filepath = new_filepath
-        else:
-            if new_root:
-                pfo.root = new_root
-            if new_file:
-                pfo.file = new_file
-
-        os.replace(old_filepath, pfo.filepath)
-
-    @staticmethod
-    def _resolve_parameter_separator(parameter_separator: Optional[str], parameter_seperator: Optional[str]) -> Optional[str]:
-        if parameter_separator is None and parameter_seperator is not None:
-            return parameter_seperator
-        return parameter_separator
-
-    @staticmethod
-    def _setup_tree_directories(root: str, node, pre_parents: Optional[list[str]] = None) -> str:
-        node_parents = list(pre_parents or [])
-        node_parents.extend(node.gps())
-
-        new_root = root
-        for parent in node_parents:
-            path = os.path.join(new_root, parent)
-            os.makedirs(path, exist_ok=True)
-            new_root = path
-
-        return new_root
-
-    @staticmethod
-    def _create_filename(
-        pre_parents: Optional[list[str]],
-        node,
-        file_type: str,
-        parameter_separator: Optional[str] = None,
-        parameter_seperator: Optional[str] = None,
-    ) -> str:
-        separator = DataWriter._resolve_parameter_separator(parameter_separator, parameter_seperator) or "_~_"
-        node_parents = list(pre_parents or [])
-        node_parents.extend(node.gps())
-        return separator.join(node_parents) + "." + file_type
 
     @staticmethod
     def write_array(
@@ -551,186 +552,6 @@ class DataWriter:
         raw_bytes = source_path.read_bytes()
         _store_source_attributes(node, source_path, source_format)
         return DataWriter.write_bytes(node, raw_bytes, data_attribute=data_attribute, metadata=merged_metadata)
-
-    @staticmethod
-    def write_audio_wav(
-        root: str,
-        node,
-        audio: ndarray,
-        samplerate: int,
-        filename: Optional[str] = None,
-        pre_parents: Optional[list[str]] = None,
-        filepath_attribute: str = "_pfo_audio_wav",
-        parameter_separator: Optional[str] = None,
-        parameter_seperator: Optional[str] = None,
-    ) -> int:
-        from scipy.io.wavfile import write
-
-        if filename is None:
-            filename = DataWriter._create_filename(
-                pre_parents=pre_parents,
-                node=node,
-                file_type="wav",
-                parameter_separator=parameter_separator,
-                parameter_seperator=parameter_seperator,
-            )
-
-        filepath = os.path.join(root, filename)
-        write(filepath, samplerate, audio)
-        DataWriter.attach_file_reference(node, filepath_attribute=filepath_attribute, filepath=filepath)
-        return 1
-
-    @staticmethod
-    def write_audio_wav_into_tree_directories(
-        root: str,
-        node,
-        audio: ndarray,
-        samplerate: int,
-        filename: Optional[str] = None,
-        pre_parents: Optional[list[str]] = None,
-        filepath_attribute: str = "_pfo_audio_wav",
-    ) -> None:
-        root = DataWriter._setup_tree_directories(root=root, node=node, pre_parents=pre_parents)
-        DataWriter.write_audio_wav(
-            root=root,
-            node=node,
-            audio=audio,
-            samplerate=samplerate,
-            filename=filename,
-            pre_parents=pre_parents,
-            filepath_attribute=filepath_attribute,
-        )
-
-    @staticmethod
-    def write_audio_raw(
-        root: str,
-        node,
-        audio: ndarray,
-        samplerate: int,
-        filename: Optional[str] = None,
-        pre_parents: Optional[list[str]] = None,
-        filepath_attribute: str = "_pfo_audio_raw",
-        parameter_separator: Optional[str] = None,
-        parameter_seperator: Optional[str] = None,
-    ) -> int:
-        if filename is None:
-            filename = DataWriter._create_filename(
-                pre_parents=pre_parents,
-                node=node,
-                file_type="raw",
-                parameter_separator=parameter_separator,
-                parameter_seperator=parameter_seperator,
-            )
-
-        filepath = os.path.join(root, filename)
-        with open(filepath, mode="wb") as file_handle:
-            file_handle.write(audio.tobytes())
-
-        DataWriter.attach_file_reference(node, filepath_attribute=filepath_attribute, filepath=filepath)
-        node.set_attribute("_audio_raw_dtype", str(audio.dtype))
-        node.set_attribute("_audio_raw_samplerate", samplerate)
-        return 1
-
-    @staticmethod
-    def write_audio_raw_into_tree_directories(
-        root: str,
-        node,
-        audio: ndarray,
-        samplerate: int,
-        filename: Optional[str] = None,
-        pre_parents: Optional[list[str]] = None,
-        filepath_attribute: str = "_pfo_audio_raw",
-        parameter_separator: Optional[str] = None,
-        parameter_seperator: Optional[str] = None,
-    ) -> None:
-        root = DataWriter._setup_tree_directories(root=root, node=node, pre_parents=pre_parents)
-        DataWriter.write_audio_raw(
-            root=root,
-            node=node,
-            audio=audio,
-            samplerate=samplerate,
-            filename=filename,
-            pre_parents=pre_parents,
-            filepath_attribute=filepath_attribute,
-            parameter_separator=parameter_separator,
-            parameter_seperator=parameter_seperator,
-        )
-
-    @staticmethod
-    def write_array_npy(
-        root: str,
-        node,
-        array: ndarray,
-        filename: Optional[str] = None,
-        pre_parents: Optional[list[str]] = None,
-        filepath_attribute: str = "_pfo_array_npy",
-        parameter_separator: Optional[str] = None,
-        parameter_seperator: Optional[str] = None,
-    ) -> int:
-        if filename is None:
-            filename = DataWriter._create_filename(
-                pre_parents=pre_parents,
-                node=node,
-                file_type="npy",
-                parameter_separator=parameter_separator,
-                parameter_seperator=parameter_seperator,
-            )
-
-        filepath = os.path.join(root, filename)
-        save(filepath, array)
-        DataWriter.attach_file_reference(node, filepath_attribute=filepath_attribute, filepath=filepath)
-        return 1
-
-    @staticmethod
-    def write_array_npy_into_tree_directories(
-        root: str,
-        node,
-        array: ndarray,
-        filename: Optional[str] = None,
-        pre_parents: Optional[list[str]] = None,
-        filepath_attribute: str = "_pfo_array_npy",
-        parameter_separator: Optional[str] = None,
-        parameter_seperator: Optional[str] = None,
-    ) -> None:
-        root = DataWriter._setup_tree_directories(root=root, node=node, pre_parents=pre_parents)
-        DataWriter.write_array_npy(
-            root=root,
-            node=node,
-            array=array,
-            filename=filename,
-            pre_parents=pre_parents,
-            filepath_attribute=filepath_attribute,
-            parameter_separator=parameter_separator,
-            parameter_seperator=parameter_seperator,
-        )
-
-    @staticmethod
-    def write_table_txt(
-        root: str,
-        node,
-        dataframe,
-        header: bool = True,
-        index: bool = False,
-        filename: Optional[str] = None,
-        pre_parents: Optional[list[str]] = None,
-        filepath_attribute: str = "_pfo_table_txt",
-        parameter_separator: Optional[str] = None,
-        parameter_seperator: Optional[str] = None,
-    ) -> int:
-        if filename is None:
-            filename = DataWriter._create_filename(
-                pre_parents=pre_parents,
-                node=node,
-                file_type="txt",
-                parameter_separator=parameter_separator,
-                parameter_seperator=parameter_seperator,
-            )
-
-        filepath = os.path.join(root, filename)
-        dataframe.to_csv(filepath, header=header, index=index)
-        DataWriter.attach_file_reference(node, filepath_attribute=filepath_attribute, filepath=filepath)
-        return 1
-
 
 class DataReader:
     @staticmethod
