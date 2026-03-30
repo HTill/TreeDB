@@ -62,3 +62,25 @@ Readable wrappers were added so the API is easier to maintain and easier for wea
 - source package lives in `src/TreeDB`
 - tests live in `tests/`
 - API notes live in `docs/API.md`
+
+## Publishing
+
+PyPI publishing is configured with GitHub Actions via trusted publishing.
+
+Recommended setup:
+- create a PyPI project named `TreeDB`
+- add a trusted publisher on PyPI for this GitHub repository
+- publish by creating a GitHub release
+
+TestPyPI is also configured.
+
+Recommended rollout:
+- first connect this repo to TestPyPI trusted publishing
+- trigger the `Publish to TestPyPI` workflow manually or with a tag like `test-v1.1.0`
+- verify install from TestPyPI
+- then connect the same repo/workflow to real PyPI
+- publish a GitHub release for the real upload
+
+Example test install:
+
+`pip install --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple TreeDB`

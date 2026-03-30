@@ -10,7 +10,8 @@ authors = [
     {name = "Till Spitz", email = "tillh.spitz@t-online.de"},
 ]
 readme = "README.md"
-license = {file = "LICENSE"}
+license = "MIT"
+license-files = ["LICENSE"]
 requires-python = ">=3.9"
 
 dependencies = [
