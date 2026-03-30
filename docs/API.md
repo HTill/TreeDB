@@ -39,11 +39,12 @@ Important behaviors:
 
 ## File helpers
 
-### `add_file(node, ...)`
-Attach a `PathFileObj` to a node attribute.
-
-### `FileReader` / `FileWriter`
-Helpers for wav/txt/npy oriented workflows.
+File-path based helpers now live on `DataReader` / `DataWriter`, for example:
+- `DataWriter.attach_file(...)`
+- `DataWriter.rename_file(...)`
+- `DataWriter.write_audio_wav(...)`
+- `DataReader.read_audio_wav(...)`
+- `DataReader.read_array_npy(...)`
 
 ## Blob helpers
 
@@ -68,11 +69,13 @@ Typical use case:
 - Stores sensor arrays using a selected backend: `blob` or `zarr`.
 - Attaches a data reference object to a node.
 - Records metadata like sample rate, dtype, shape, dataset path, and custom sensor metadata.
+- Also contains file-path based helper methods for legacy file-oriented workflows.
 
 ### `DataReader`
 - Reads data ranges in samples or seconds.
 - Provides `iter_blocks(...)` for streaming/block-based consumption.
 - Converts second-based ranges into sample indices using `samplerate_hz`.
+- Also contains file-path based helper methods for legacy file-oriented workflows.
 
 ### `DataObject`
 - Persistent data reference stored on a node.

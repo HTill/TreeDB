@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import os
 import pickle
 import re
 from itertools import repeat
@@ -153,3 +152,4 @@ def node_list_to_dataframe(node_list: List[BaseNode], attribute_list: List[str])
 def test_counter(node: BaseNode, offset: int):
     node.ga("c", node.ga("a") + node.ga("b") + offset)
     return node
+

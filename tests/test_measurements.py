@@ -120,3 +120,13 @@ def test_get_data_node_creates_specialized_node_and_uses_defaults(tmp_path):
 
     reopened.close_connection()
     reopened.close()
+
+
+def test_data_reader_writer_cover_legacy_file_helpers(tmp_path):
+    node = DataNode(key="capture", samplerate_hz=1)
+    array = np.arange(6, dtype=np.float32).reshape(3, 2)
+
+    DataWriter.write_array_npy(root=str(tmp_path), node=node, array=array, filename="capture.npy")
+
+    restored = DataReader.read_array_npy(node)
+    np.testing.assert_array_equal(restored, array)

@@ -5,3 +5,5 @@ def test_primary_public_imports_are_available():
     assert hasattr(lotdb, "BaseNode")
     assert hasattr(lotdb, "DataNode")
     assert hasattr(lotdb, "LOTDB")
+    assert not hasattr(lotdb, "FileReader")
+    assert not hasattr(lotdb, "FileWriter")

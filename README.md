@@ -77,6 +77,8 @@ db.close_connection()
 db.close()
 ```
 
+File-path based helpers are now folded into `DataReader` / `DataWriter` instead of living as separate reader/writer utility classes.
+
 ## Data backend usage
 
 ```python
