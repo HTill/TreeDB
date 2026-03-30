@@ -1,5 +1,5 @@
 from .blobs import BlobObject, BlobReader, BlobWriter, add_blob
-from .database import LOTDB, NodeConnection, load_small_files_directory, load_small_files_folder
+from .database import LOTDB, NodeConnection
 from .measurements import DataObject, DataReader, DataWriter
 from .paths import PathFileObj
 from .tree import BaseNode, BaseNodeUnconnected, DataNode
@@ -29,8 +29,6 @@ __all__ = [
     "NodeConnection",
     "PathFileObj",
     "add_blob",
-    "load_small_files_directory",
-    "load_small_files_folder",
     "filter_node_list",
     "save_to_file",
     "load_from_file",

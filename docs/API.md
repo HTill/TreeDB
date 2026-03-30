@@ -108,10 +108,12 @@ Typical use case:
 
 ## Bulk loading helpers
 
-### `LOTDB.load_files_folder()`
+These file-indexing helpers live in `lotdb.utils`.
+
+### `lotdb.utils.load_files_folder()`
 Creates nodes from filenames split by a separator.
 
-### `LOTDB.load_files_directory()`
+### `lotdb.utils.load_files_directory()`
 Creates nodes from folder hierarchy and filenames.
 
 ## Data/export helpers
