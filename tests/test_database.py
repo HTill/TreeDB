@@ -1,10 +1,10 @@
 from pathlib import Path
 
-from TreeDB import StorageTreeDatabase
+from TreeDB import LOTDB, StorageTreeDatabase
 
 
 def test_database_persistence_roundtrip(tmp_path):
-    db = StorageTreeDatabase(path=str(tmp_path), name="test.fs", new=True)
+    db = LOTDB(path=str(tmp_path), name="test.fs", new=True)
 
     tree = db.open_connection()
     tree.gns(["collection", "item"]).ga("value", 42)
@@ -12,7 +12,7 @@ def test_database_persistence_roundtrip(tmp_path):
     db.close_connection()
     db.close()
 
-    reopened = StorageTreeDatabase(path=str(tmp_path), name="test.fs")
+    reopened = LOTDB(path=str(tmp_path), name="test.fs")
     tree = reopened.open_connection()
 
     assert tree.gns(["collection", "item"]).ga("value") == 42
@@ -22,7 +22,7 @@ def test_database_persistence_roundtrip(tmp_path):
 
 
 def test_database_context_manager_closes_connection(tmp_path):
-    db = StorageTreeDatabase(path=str(tmp_path), name="context.fs", new=True)
+    db = LOTDB(path=str(tmp_path), name="context.fs", new=True)
 
     with db.connection() as tree:
         tree.gns(["alpha", "beta"]).ga("seen", True)
@@ -38,7 +38,7 @@ def test_load_files_folder_builds_tree(tmp_path):
     (data_dir / "speaker1_~_utt1.wav").write_bytes(b"")
     (data_dir / "speaker1_~_utt2.wav").write_bytes(b"")
 
-    db = StorageTreeDatabase(path=str(tmp_path), name="folder.fs", new=True)
+    db = LOTDB(path=str(tmp_path), name="folder.fs", new=True)
     processed = db.load_files_folder(str(data_dir))
 
     assert processed == 2
@@ -49,3 +49,7 @@ def test_load_files_folder_builds_tree(tmp_path):
 
     db.close_connection()
     db.close()
+
+
+def test_storage_tree_database_alias_points_to_lotdb():
+    assert StorageTreeDatabase is LOTDB

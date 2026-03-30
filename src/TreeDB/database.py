@@ -21,7 +21,7 @@ def _resolve_parameter_separator(parameter_separator: Optional[str], parameter_s
 class StorageTreeConnection:
     def __init__(
         self,
-        database: "StorageTreeDatabase",
+        database: "LOTDB",
         connection_id: str = "standard",
         unconnected_tree: Optional[StorageTreeUnconnected] = None,
     ) -> None:
@@ -42,11 +42,11 @@ class StorageTreeConnection:
         return False
 
 
-class StorageTreeDatabase:
+class LOTDB:
     def __init__(
         self,
         path: str = "",
-        name: str = "StorageTreeDB",
+        name: str = "LOTDB",
         new: bool = False,
         read_only: bool = False,
     ) -> None:
@@ -266,3 +266,6 @@ def load_small_files_folder(
         processed += 1
 
     return processed
+
+
+StorageTreeDatabase = LOTDB

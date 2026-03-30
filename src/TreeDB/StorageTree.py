@@ -1,4 +1,4 @@
-from .database import StorageTreeConnection, StorageTreeDatabase, load_small_files_directory, load_small_files_folder
+from .database import LOTDB, StorageTreeConnection, StorageTreeDatabase, load_small_files_directory, load_small_files_folder
 from .files import FileReader, FileWriter, add_file, rename_file
 from .paths import PathFileObj
 from .tree import StorageTree, StorageTreeUnconnected
@@ -17,6 +17,7 @@ from .utils import (
 __all__ = [
     "StorageTree",
     "StorageTreeUnconnected",
+    "LOTDB",
     "StorageTreeConnection",
     "StorageTreeDatabase",
     "PathFileObj",

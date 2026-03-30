@@ -27,11 +27,14 @@ Important behaviors:
 - `merge_tree()` merges child trees recursively.
 - `delete_node(..., only_node=True)` removes a node but promotes its children.
 
-### `StorageTreeDatabase`
+### `LOTDB`
 - ZODB-backed storage for a root `StorageTree`.
 - `open_connection()` opens a transaction-scoped connection.
 - `commit()` must be called explicitly for writes.
 - `connection()` provides a context manager that closes the connection automatically.
+
+Compatibility alias:
+- `StorageTreeDatabase`
 
 ### `PathFileObj`
 - Persistent file path object storing root and filename separately.
@@ -47,10 +50,10 @@ Helpers for wav/txt/npy oriented workflows.
 
 ## Bulk loading helpers
 
-### `StorageTreeDatabase.load_files_folder()`
+### `LOTDB.load_files_folder()`
 Creates nodes from filenames split by a separator.
 
-### `StorageTreeDatabase.load_files_directory()`
+### `LOTDB.load_files_directory()`
 Creates nodes from folder hierarchy and filenames.
 
 ## Data/export helpers

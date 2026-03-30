@@ -38,9 +38,9 @@ print(node.get_attribute("label"))
 ## Persistent database usage
 
 ```python
-from lotdb import StorageTreeDatabase
+from lotdb import LOTDB
 
-db = StorageTreeDatabase(path="./data", name="treedb.fs", new=True)
+db = LOTDB(path="./data", name="lotdb.fs", new=True)
 tree = db.open_connection()
 
 tree.get_node_path(["speaker_01", "clip_001"]).set_attribute("duration", 1.23)
@@ -62,6 +62,8 @@ Readable wrappers were added so the API is easier to maintain and easier for wea
 Import compatibility is also preserved for now:
 - new import: `import lotdb`
 - legacy imports still work: `import TreeDB`, `import StorageTree`
+- new database class: `LOTDB`
+- legacy alias still works: `StorageTreeDatabase`
 
 ## Development
 
