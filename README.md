@@ -81,20 +81,45 @@ from lotdb import LOTDB
 db = LOTDB(path="./data", name="lotdb.fs", new=True)
 root = db.open_connection()
 
-data_node = root.get_data_node(
+capture_1 = root.get_data_node(
     ["sensor_01", "capture_0001"],
     samplerate_hz=1000,
     backend="zarr",   # or "blob"
     data_attribute="imu",
 )
 
+capture_2 = root.get_data_node(
+    ["sensor_01", "capture_0002"],
+    samplerate_hz=1000,
+    backend="zarr",
+    data_attribute="imu",
+)
+
 data = np.random.randn(2000, 6).astype("float32")
-data_node.write_data(data, database=db)
+capture_1.write_data(data, database=db)
+capture_2.write_data(data * 0.5, database=db)
 
-window = data_node.read_seconds(1.0, 2.0)
+window = capture_1.read_seconds(1.0, 2.0)
 
-for block in data_node.iter_data_blocks(0.5, block_unit="seconds"):
+for block in capture_1.iter_data_blocks(0.5, block_unit="seconds"):
     process(block)
+
+# first iteration layer under the root
+for node in root.iterate_tree_level(1):
+    print(node.key)
+
+# first iteration layer under sensor_01
+sensor_node = root.get_node_path(["sensor_01"])
+for node in sensor_node.iterate_tree_level(1):
+    print(node.key)
+
+# all leaves below sensor_01
+for leaf in sensor_node.iterate_tree_leaves():
+    print("leaf", leaf.key)
+
+# buffered iteration over leaves
+for batch in sensor_node.iterate_tree_crone_buffered(buffer_size=2):
+    print([node.key for node in batch])
 
 db.commit()
 db.close_connection()
