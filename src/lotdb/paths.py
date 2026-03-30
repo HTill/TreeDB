@@ -225,4 +225,10 @@ class PathFileObj(persistent.Persistent):
         return None
 
     def copy_for_tree(self) -> "PathFileObj":
-        return PathFileObj(filepath=self.filepath)
+        clone = PathFileObj()
+        clone._path_style = self._path_style
+        clone._drive = self._drive
+        clone._is_absolute = self._is_absolute
+        clone.root_path_list = persistent.list.PersistentList(list(self.root_path_list))
+        clone._file = self._file
+        return clone

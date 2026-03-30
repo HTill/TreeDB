@@ -49,3 +49,11 @@ def test_path_file_obj_read_access_does_not_mark_object_changed():
 
     _ = pfo.root
     assert pfo._p_changed is False
+
+
+def test_copy_for_tree_preserves_relative_linux_style_paths():
+    pfo = PathFileObj(filepath="sensor/capture_002/data")
+
+    copied = pfo.copy_for_tree()
+
+    assert copied.as_linux_path() == "sensor/capture_002/data"
