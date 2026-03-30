@@ -21,6 +21,7 @@ dependencies = [
 
 [project.optional-dependencies]
 io = [
+    "Pillow",
     "pandas",
     "scipy",
 ]
@@ -28,7 +29,10 @@ measurements = [
     "zarr",
 ]
 dev = [
+    "Pillow",
+    "pandas",
     "pytest",
+    "scipy",
     "zarr",
 ]
 

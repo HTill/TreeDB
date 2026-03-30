@@ -1,6 +1,7 @@
 from pathlib import Path
 
 import numpy as np
+import pandas as pd
 
 from lotdb import LOTDB, DataNode, DataReader, DataWriter
 
@@ -60,7 +61,7 @@ def test_zarr_measurement_links_and_streams_blocks(tmp_path):
     db.close()
 
     assert data.store_path is not None
-    assert Path(data.store_path).exists()
+    assert Path(data.store_path.filepath).exists()
 
     reopened = LOTDB(path=str(tmp_path), name="measurement_zarr.fs")
     tree = reopened.open_connection()
@@ -69,7 +70,7 @@ def test_zarr_measurement_links_and_streams_blocks(tmp_path):
 
     assert linked_data.backend == "zarr"
     assert linked_data.get_metadata("sensor") == "emg"
-    assert linked_data.get_metadata("zarr_dataset_path") == "sensor/capture_002/data"
+    assert linked_data.get_metadata("zarr_dataset_path").as_linux_path() == "sensor/capture_002/data"
     np.testing.assert_array_equal(DataReader.read_interval(node, "data", 3, 7), signal[3:7])
 
     blocks = list(
@@ -128,5 +129,46 @@ def test_data_reader_writer_cover_legacy_file_helpers(tmp_path):
 
     DataWriter.write_array_npy(root=str(tmp_path), node=node, array=array, filename="capture.npy")
 
-    restored = DataReader.read_array_npy(node)
+    restored = np.load(node.ga("_pfo_array_npy").filepath)
     np.testing.assert_array_equal(restored, array)
+
+
+def test_attach_file_ingests_npy_into_backend(tmp_path):
+    node = DataNode(key="capture")
+    expected = np.arange(12, dtype=np.float32).reshape(6, 2)
+    filepath = tmp_path / "capture.npy"
+    np.save(filepath, expected)
+
+    data_object = DataWriter.attach_file(node, str(filepath), data_attribute="ingested", backend="blob")
+
+    np.testing.assert_array_equal(DataReader.read(node, "ingested"), expected)
+    assert data_object.get_metadata("payload_kind") == "array"
+    assert node.get_attribute("_source_format") == "npy"
+    assert node.get_attribute("_source_filename") == "capture.npy"
+    assert node.get_attribute("_source_filepath").filepath == str(filepath)
+
+
+def test_attach_file_ingests_text_into_blob_backend(tmp_path):
+    node = DataNode(key="notes")
+    filepath = tmp_path / "notes.txt"
+    filepath.write_text("hello lotdb", encoding="utf-8")
+
+    data_object = DataWriter.attach_file(node, str(filepath), data_attribute="notes")
+
+    assert DataReader.read(node, "notes") == "hello lotdb"
+    assert data_object.get_metadata("payload_kind") == "text"
+    assert node.get_attribute("_source_format") == "txt"
+
+
+def test_attach_file_ingests_csv_into_table_payload(tmp_path):
+    node = DataNode(key="table")
+    expected = pd.DataFrame({"a": [1, 2], "b": [3, 4]})
+    filepath = tmp_path / "table.csv"
+    expected.to_csv(filepath, index=False)
+
+    data_object = DataWriter.attach_file(node, str(filepath), data_attribute="table")
+    restored = DataReader.read(node, "table")
+
+    pd.testing.assert_frame_equal(restored, expected)
+    assert data_object.get_metadata("payload_kind") == "table"
+    assert node.get_attribute("_source_format") == "csv"

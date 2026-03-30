@@ -174,7 +174,7 @@ class LOTDB:
 
                 stem = os.path.splitext(file_name)[0]
                 cur_node = last_node.gn(stem) if separator is None else last_node.gns(stem.split(separator))
-                DataWriter.attach_file(cur_node, filepath_attribute=filepath_attribute, root=root, file=file_name)
+                DataWriter.attach_file_reference(cur_node, filepath_attribute=filepath_attribute, root=root, file=file_name)
 
                 processed += 1
                 if commit_every and processed % commit_every == 0:
@@ -209,7 +209,7 @@ class LOTDB:
             stem = os.path.splitext(file_name)[0]
             file_node_names = [stem] if separator is None else stem.split(separator)
             cur_node = tree.gns(file_node_names)
-            DataWriter.attach_file(cur_node, filepath_attribute=filepath_attribute, root=folder_path, file=file_name)
+            DataWriter.attach_file_reference(cur_node, filepath_attribute=filepath_attribute, root=folder_path, file=file_name)
 
             processed += 1
             if commit_every and processed % commit_every == 0:
@@ -248,7 +248,7 @@ def load_small_files_directory(
 
             stem = os.path.splitext(file_name)[0]
             cur_node = last_node.gn(stem) if separator is None else last_node.gns(stem.split(separator))
-            DataWriter.attach_file(cur_node, filepath_attribute=filepath_attribute, root=root, file=file_name)
+            DataWriter.attach_file_reference(cur_node, filepath_attribute=filepath_attribute, root=root, file=file_name)
             processed += 1
 
     return processed
@@ -272,7 +272,7 @@ def load_small_files_folder(
         stem = os.path.splitext(file_name)[0]
         file_node_names = [stem] if separator is None else stem.split(separator)
         cur_node = tree.gns(file_node_names)
-        DataWriter.attach_file(cur_node, filepath_attribute=filepath_attribute, root=folder_path, file=file_name)
+        DataWriter.attach_file_reference(cur_node, filepath_attribute=filepath_attribute, root=folder_path, file=file_name)
         processed += 1
 
     return processed

@@ -1,150 +1,201 @@
 # LOTDB
 
-Persistent tree database for hierarchical metadata and file-backed datasets.
+Light Object Tree DB.
 
-LOTDB stands for Light Object Tree DB.
+LOTDB is a persistent tree for organizing computation results, metadata, and large data payloads with very little boilerplate.
 
-## What it is
+## Core idea
 
-LOTDB stores data in `BaseNode` nodes:
-- each node can contain child nodes
-- each node can store arbitrary attributes
-- the full tree can be persisted with ZODB
+LOTDB is built around two node types:
+- `BaseNode` for generic hierarchy and metadata
+- `DataNode` for hierarchy plus data-oriented read/write behavior
 
-This is especially useful for dataset pipelines where folder structure, file references, and metadata all belong together.
+Each node can:
+- contain child nodes
+- store arbitrary attributes
+- be persisted with ZODB
 
-LOTDB now supports both:
-- file references for external assets
-- native ZODB blob storage for large sensor measurements and array payloads
-- backend-linked measurements via blob or Zarr
+Large payloads can be stored through pluggable backends such as:
+- `blob`
+- `zarr`
+
+This makes LOTDB useful for pipelines where you want to:
+- branch variants of computations
+- cache intermediate results on disk
+- keep metadata close to the computation tree
+- avoid manually managing lots of folder/path boilerplate
 
 ## Installation
 
-Local editable install:
+Install from PyPI:
 
-`pip install -e .`
+`pip install lotdb`
 
-With optional IO helpers:
+With optional extras:
 
-`pip install -e .[io]`
+`pip install "lotdb[io,measurements]"`
 
-## Basic usage
+## Mental model
+
+- `BaseNode` = generic tree node
+- `DataNode` = specialized node for data payloads
+- `LOTDB` = persistent container for the root tree
+
+The recommended API is node-centered.
+
+## Quick start
 
 ```python
 from lotdb import BaseNode
 
-tree = BaseNode(key="dataset")
-node = tree.get_node_path(["speaker_01", "session_a", "clip_001"])
+root = BaseNode(key="dataset")
+node = root.get_node_path(["speaker_01", "session_a", "clip_001"])
 node.set_attribute("label", "hello")
 
 print(node.get_attribute("label"))
 ```
 
-## Persistent database usage
+## Persistent usage
 
 ```python
 from lotdb import LOTDB
 
 db = LOTDB(path="./data", name="lotdb.fs", new=True)
-tree = db.open_connection()
+root = db.open_connection()
 
-tree.get_node_path(["speaker_01", "clip_001"]).set_attribute("duration", 1.23)
+root.get_node_path(["speaker_01", "clip_001"]).set_attribute("duration", 1.23)
+
 db.commit()
 db.close_connection()
 db.close()
 ```
 
-## Sensor/blob storage usage
+## Recommended data workflow
+
+Use `get_data_node(...)` when the final node should own data behavior.
 
 ```python
 import numpy as np
-from lotdb import BlobReader, BlobWriter, LOTDB
+from lotdb import LOTDB
 
 db = LOTDB(path="./data", name="lotdb.fs", new=True)
-tree = db.open_connection()
+root = db.open_connection()
 
-node = tree.get_node_path(["sensor_01", "capture_0001"])
-BlobWriter.write_array(
-    node,
-    np.random.randn(1000, 6).astype("float32"),
-    blob_attribute="measurement",
-    metadata={"samplerate_hz": 1000, "sensor_type": "imu"},
+data_node = root.get_data_node(
+    ["sensor_01", "capture_0001"],
+    samplerate_hz=1000,
+    backend="zarr",   # or "blob"
+    data_attribute="imu",
 )
 
+data = np.random.randn(2000, 6).astype("float32")
+data_node.write_data(data, database=db)
+
+window = data_node.read_seconds(1.0, 2.0)
+
+for block in data_node.iter_data_blocks(0.5, block_unit="seconds"):
+    process(block)
+
 db.commit()
-measurement = BlobReader.read_array(node, "measurement")
 db.close_connection()
 db.close()
 ```
 
-File-path based helpers are now folded into `DataReader` / `DataWriter` instead of living as separate reader/writer utility classes.
+This is the main API LOTDB is optimized for.
 
-## Data backend usage
+## Generic nodes vs data nodes
+
+Use `BaseNode` when you only need:
+- hierarchy
+- metadata
+- relationships
+
+Use `DataNode` when you want the node itself to own:
+- `write_data(...)`
+- `read_data(...)`
+- `read_seconds(...)`
+- `iter_data_blocks(...)`
+
+`get_node(...)` remains the generic retriever.
+`get_data_node(...)` ensures the final node is a `DataNode`.
+
+## Lower-level data API
+
+The lower-level API still exists when you want direct control:
 
 ```python
 import numpy as np
-from lotdb import DataReader, DataWriter, LOTDB
-
-db = LOTDB(path="./data", name="lotdb.fs", new=True)
-tree = db.open_connection()
-node = tree.get_node_path(["sensor_01", "capture_0002"])
+from lotdb import DataReader, DataWriter
 
 DataWriter.write_array(
     node,
-    np.random.randn(2000, 6).astype("float32"),
-    samplerate_hz=1000,
-    backend="zarr",  # or "blob"
-    data_attribute="imu",
-    database=db,
-    metadata={"sensor_type": "imu", "unit": "m/s^2"},
+    np.random.randn(1000, 4).astype("float32"),
+    samplerate_hz=500,
+    backend="blob",
+    data_attribute="signal",
 )
 
-for block in DataReader.iter_blocks(
-    node,
-    "imu",
-    block_size=0.5,
-    block_unit="seconds",
-):
-    process(block)
-
-second_one_to_two = DataReader.read_seconds(node, "imu", 1.0, 2.0)
-
-db.commit()
-db.close_connection()
-db.close()
+signal = DataReader.read_interval(node, "signal", 100, 200)
 ```
 
-## Data node API
+## File ingestion
+
+External files are now treated as ingestion inputs.
+
+`DataWriter.attach_file(...)` loads the file, converts it into the configured backend representation, and stores source metadata on the node attributes.
+
+After that, reads happen only through the backend:
 
 ```python
-data_node = tree.get_data_node(
-    ["sensor_01", "capture_0003"],
-    samplerate_hz=1000,
-    backend="zarr",
-    data_attribute="imu",
-)
-
-data_node.write_data(data, database=db)
-
-for block in data_node.iter_data_blocks(0.25, block_unit="seconds"):
-    process(block)
-
-window = data_node.read_seconds(1.0, 2.0)
+data_node.attach_file("./capture.npy", database=db, data_attribute="imu")
+payload = data_node.read_data()
 ```
 
-This is the recommended high-level API for large binary/data payloads.
+Typical formats currently supported:
+- `wav`
+- `npy`
+- `csv`
+- `txt`
+- `png` / `jpg` / `jpeg`
+- raw bytes for unknown formats
+
+Typical source attributes written onto the node:
+- `_source_filepath`
+- `_source_format`
+- `_source_filename`
+- `_source_samplerate_hz` for wav files
+
+## Why LOTDB instead of only HDF5/Zarr?
+
+LOTDB is not just a container for arrays.
+
+It is useful when you want:
+- a persistent computation tree
+- easy branching of variants
+- metadata attached directly to pipeline nodes
+- cached intermediate states across runs
+- backend flexibility for how payloads are stored
 
 ## Development
 
-- source package lives in `src/lotdb`
-- tests live in `tests/`
-- API notes live in `docs/API.md`
+- source package: `src/lotdb`
+- tests: `tests/`
+- API notes: `docs/API.md`
+
+Development install:
+
+`pip install -e .`
+
+With extras:
+
+`pip install -e .[io,measurements]`
 
 ## Publishing
 
-PyPI publishing is configured with GitHub Actions via trusted publishing.
+PyPI publishing is configured through GitHub Actions trusted publishing.
 
-Recommended setup:
-- create a PyPI project named `lotdb`
-- add a trusted publisher on PyPI for this GitHub repository
-- publish by creating a GitHub release
+Typical release flow:
+1. bump version in `pyproject.toml`
+2. push to `main`
+3. create a GitHub release
+4. GitHub publishes to PyPI

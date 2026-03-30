@@ -421,7 +421,7 @@ class DataNode(BaseNode):
 
     def write_data(
         self,
-        array: Any,
+        data: Any,
         database=None,
         data_attribute: str | None = None,
         backend: str | None = None,
@@ -435,8 +435,6 @@ class DataNode(BaseNode):
 
         if samplerate_hz is None:
             samplerate_hz = self.samplerate_hz
-        if samplerate_hz is None:
-            raise ValueError("samplerate_hz must be configured on the DataNode or passed explicitly.")
 
         data_attribute = data_attribute or self.data_attribute
         backend = backend or self.data_backend
@@ -448,7 +446,7 @@ class DataNode(BaseNode):
 
         return DataWriter.write_array(
             self,
-            array,
+            data,
             samplerate_hz=samplerate_hz,
             data_attribute=data_attribute,
             backend=backend,
@@ -459,16 +457,80 @@ class DataNode(BaseNode):
             content_type=content_type,
         )
 
+    def ingest_file(
+        self,
+        filepath: str,
+        database=None,
+        data_attribute: str | None = None,
+        backend: str | None = None,
+        samplerate_hz: float | None = None,
+        format: str | None = None,
+        metadata: Optional[dict[str, Any]] = None,
+        zarr_store_path: str | None = None,
+        chunks: Optional[tuple[int, ...]] = None,
+        text_encoding: str = "utf-8",
+    ):
+        from .measurements import DataWriter
+
+        if samplerate_hz is None:
+            samplerate_hz = self.samplerate_hz
+
+        data_attribute = data_attribute or self.data_attribute
+        backend = backend or self.data_backend
+        self.configure_data_storage(
+            samplerate_hz=samplerate_hz,
+            backend=backend,
+            data_attribute=data_attribute,
+        )
+
+        return DataWriter.ingest_file(
+            self,
+            filepath=filepath,
+            data_attribute=data_attribute,
+            backend=backend,
+            samplerate_hz=samplerate_hz,
+            database=database,
+            format=format,
+            metadata=metadata,
+            zarr_store_path=zarr_store_path,
+            chunks=chunks,
+            text_encoding=text_encoding,
+        )
+
+    def attach_file(
+        self,
+        filepath: str,
+        database=None,
+        data_attribute: str | None = None,
+        backend: str | None = None,
+        samplerate_hz: float | None = None,
+        format: str | None = None,
+        metadata: Optional[dict[str, Any]] = None,
+        zarr_store_path: str | None = None,
+        chunks: Optional[tuple[int, ...]] = None,
+        text_encoding: str = "utf-8",
+    ):
+        return self.ingest_file(
+            filepath=filepath,
+            database=database,
+            data_attribute=data_attribute,
+            backend=backend,
+            samplerate_hz=samplerate_hz,
+            format=format,
+            metadata=metadata,
+            zarr_store_path=zarr_store_path,
+            chunks=chunks,
+            text_encoding=text_encoding,
+        )
+
     def read_data(self, start: Any = None, stop: Any = None, unit: str = "samples", data_attribute: str | None = None):
         from .measurements import DataReader
 
-        return DataReader.read_interval(
-            self,
-            data_attribute=data_attribute or self.data_attribute,
-            start=start,
-            stop=stop,
-            unit=unit,
-        )
+        used_attribute = data_attribute or self.data_attribute
+        if start is None and stop is None and unit == "samples":
+            return DataReader.read(self, data_attribute=used_attribute)
+
+        return DataReader.read_interval(self, data_attribute=used_attribute, start=start, stop=stop, unit=unit)
 
     def read_seconds(self, start_second: float | None = None, stop_second: float | None = None, data_attribute: str | None = None):
         from .measurements import DataReader

@@ -39,12 +39,12 @@ Important behaviors:
 
 ## File helpers
 
-File-path based helpers now live on `DataReader` / `DataWriter`, for example:
+Files are treated as ingestion sources.
+
+Use:
 - `DataWriter.attach_file(...)`
-- `DataWriter.rename_file(...)`
-- `DataWriter.write_audio_wav(...)`
-- `DataReader.read_audio_wav(...)`
-- `DataReader.read_array_npy(...)`
+
+This loads the external file, converts it into the configured backend representation, and stores source metadata on the node attributes.
 
 ## Blob helpers
 
@@ -69,13 +69,13 @@ Typical use case:
 - Stores sensor arrays using a selected backend: `blob` or `zarr`.
 - Attaches a data reference object to a node.
 - Records metadata like sample rate, dtype, shape, dataset path, and custom sensor metadata.
-- Also contains file-path based helper methods for legacy file-oriented workflows.
+- Also supports file ingestion through `attach_file(...)`.
 
 ### `DataReader`
 - Reads data ranges in samples or seconds.
 - Provides `iter_blocks(...)` for streaming/block-based consumption.
 - Converts second-based ranges into sample indices using `samplerate_hz`.
-- Also contains file-path based helper methods for legacy file-oriented workflows.
+- Reads from the configured backend; it does not need the original source file anymore.
 
 ### `DataObject`
 - Persistent data reference stored on a node.
