@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "lotdb"
-version = "1.1.0"
+version = "1.1.1"
 description = "Persistent tree database for hierarchical metadata and file-backed datasets"
 authors = [
     {name = "Till Spitz", email = "tillh.spitz@t-online.de"},

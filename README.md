@@ -84,7 +84,7 @@ TestPyPI is also configured.
 
 Recommended rollout:
 - first connect this repo to TestPyPI trusted publishing
-- trigger the `Publish to TestPyPI` workflow manually or with a tag like `test-v1.1.0`
+- trigger the `Publish to TestPyPI` workflow manually or with a tag like `test-v1.1.1`
 - verify install from TestPyPI
 - then connect the same repo/workflow to real PyPI
 - publish a GitHub release for the real upload
