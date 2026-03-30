@@ -1,4 +1,4 @@
-# TreeDB API
+# LOTDB API
 
 ## Core classes
 

@@ -42,7 +42,7 @@ jobs:
 
     environment:
       name: testpypi
-      url: https://test.pypi.org/p/TreeDB
+      url: https://test.pypi.org/p/lotdb
 
     steps:
       - name: Download distribution artifacts

@@ -1,10 +1,12 @@
-# TreeDB
+# LOTDB
 
 Persistent tree database for hierarchical metadata and file-backed datasets.
 
+LOTDB stands for Light Object Tree DB.
+
 ## What it is
 
-TreeDB stores data in `StorageTree` nodes:
+LOTDB stores data in `StorageTree` nodes:
 - each node can contain child nodes
 - each node can store arbitrary attributes
 - the full tree can be persisted with ZODB
@@ -24,7 +26,7 @@ With optional IO helpers:
 ## Basic usage
 
 ```python
-from TreeDB import StorageTree
+from lotdb import StorageTree
 
 tree = StorageTree(key="dataset")
 node = tree.get_node_path(["speaker_01", "session_a", "clip_001"])
@@ -36,7 +38,7 @@ print(node.get_attribute("label"))
 ## Persistent database usage
 
 ```python
-from TreeDB import StorageTreeDatabase
+from lotdb import StorageTreeDatabase
 
 db = StorageTreeDatabase(path="./data", name="treedb.fs", new=True)
 tree = db.open_connection()
@@ -57,9 +59,13 @@ The old short method names still work:
 
 Readable wrappers were added so the API is easier to maintain and easier for weaker coding models to follow.
 
+Import compatibility is also preserved for now:
+- new import: `import lotdb`
+- legacy imports still work: `import TreeDB`, `import StorageTree`
+
 ## Development
 
-- source package lives in `src/TreeDB`
+- source packages live in `src/lotdb` and `src/TreeDB`
 - tests live in `tests/`
 - API notes live in `docs/API.md`
 
@@ -68,7 +74,7 @@ Readable wrappers were added so the API is easier to maintain and easier for wea
 PyPI publishing is configured with GitHub Actions via trusted publishing.
 
 Recommended setup:
-- create a PyPI project named `TreeDB`
+- create a PyPI project named `lotdb`
 - add a trusted publisher on PyPI for this GitHub repository
 - publish by creating a GitHub release
 
@@ -83,4 +89,4 @@ Recommended rollout:
 
 Example test install:
 
-`pip install --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple TreeDB`
+`pip install --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple lotdb`
