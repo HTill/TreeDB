@@ -1,6 +1,6 @@
 import platform
 
-from TreeDB import PathFileObj
+from lotdb import PathFileObj
 
 
 def test_path_file_obj_roundtrip_from_filepath():

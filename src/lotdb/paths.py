@@ -223,3 +223,6 @@ class PathFileObj(persistent.Persistent):
 
     def check_for_platform(self) -> None:
         return None
+
+    def copy_for_tree(self) -> "PathFileObj":
+        return PathFileObj(filepath=self.filepath)

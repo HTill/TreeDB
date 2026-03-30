@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from TreeDB import LOTDB, StorageTreeDatabase
+from lotdb import LOTDB
 
 
 def test_database_persistence_roundtrip(tmp_path):
@@ -49,7 +49,3 @@ def test_load_files_folder_builds_tree(tmp_path):
 
     db.close_connection()
     db.close()
-
-
-def test_storage_tree_database_alias_points_to_lotdb():
-    assert StorageTreeDatabase is LOTDB

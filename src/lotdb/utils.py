@@ -9,10 +9,10 @@ from typing import Any, Dict, Iterable, List, Optional
 
 from numpy import ndarray
 
-from .tree import StorageTree
+from .tree import BaseNode
 
 
-def filter_node_list(filter_str: str, node_list: List[StorageTree], invers: bool = False) -> List[StorageTree]:
+def filter_node_list(filter_str: str, node_list: List[BaseNode], invers: bool = False) -> List[BaseNode]:
     filtered_node_list = []
 
     for node in node_list:
@@ -42,7 +42,7 @@ def load_from_file(path: str):
 
 def node_process_cruncher(
     function,
-    node_list: List[StorageTree],
+    node_list: List[BaseNode],
     other_args_dic: Optional[Dict[str, Any]] = None,
     processes: Optional[int] = None,
 ):
@@ -75,16 +75,16 @@ def node_process_cruncher(
     return results
 
 
-def starmap_with_kwargs(pool, fn, node_list: Iterable[StorageTree], kwargs_iter: Iterable[Dict[str, Any]]):
+def starmap_with_kwargs(pool, fn, node_list: Iterable[BaseNode], kwargs_iter: Iterable[Dict[str, Any]]):
     args_for_starmap = zip(repeat(fn), node_list, kwargs_iter)
     return pool.starmap(apply_args_and_kwargs, args_for_starmap)
 
 
-def apply_args_and_kwargs(fn, node: StorageTree, kwargs: Dict[str, Any]):
+def apply_args_and_kwargs(fn, node: BaseNode, kwargs: Dict[str, Any]):
     return fn(node, **kwargs)
 
 
-def tree_to_dataframe(tree: StorageTree, attribute_list: List[str]):
+def tree_to_dataframe(tree: BaseNode, attribute_list: List[str]):
     import pandas as pd
 
     dataframe = pd.DataFrame()
@@ -117,7 +117,7 @@ def tree_to_dataframe(tree: StorageTree, attribute_list: List[str]):
     return dataframe
 
 
-def node_list_to_dataframe(node_list: List[StorageTree], attribute_list: List[str]):
+def node_list_to_dataframe(node_list: List[BaseNode], attribute_list: List[str]):
     import pandas as pd
 
     dataframe = pd.DataFrame()
@@ -150,6 +150,6 @@ def node_list_to_dataframe(node_list: List[StorageTree], attribute_list: List[st
     return dataframe
 
 
-def test_counter(node: StorageTree, offset: int):
+def test_counter(node: BaseNode, offset: int):
     node.ga("c", node.ga("a") + node.ga("b") + offset)
     return node

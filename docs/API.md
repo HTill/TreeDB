@@ -2,7 +2,7 @@
 
 ## Core classes
 
-### `StorageTree`
+### `BaseNode`
 - Hierarchical persistent node.
 - Stores child nodes in `node_storage`.
 - Stores metadata/attributes in `attribute_storage`.
@@ -28,13 +28,10 @@ Important behaviors:
 - `delete_node(..., only_node=True)` removes a node but promotes its children.
 
 ### `LOTDB`
-- ZODB-backed storage for a root `StorageTree`.
+- ZODB-backed storage for a root `BaseNode`.
 - `open_connection()` opens a transaction-scoped connection.
 - `commit()` must be called explicitly for writes.
 - `connection()` provides a context manager that closes the connection automatically.
-
-Compatibility alias:
-- `StorageTreeDatabase`
 
 ### `PathFileObj`
 - Persistent file path object storing root and filename separately.
@@ -47,6 +44,53 @@ Attach a `PathFileObj` to a node attribute.
 
 ### `FileReader` / `FileWriter`
 Helpers for wav/txt/npy oriented workflows.
+
+## Blob helpers
+
+### `BlobObject`
+- ZODB-managed binary payload stored inside the database/blob directory.
+- Can store raw bytes or NumPy arrays.
+- Supports metadata like sensor type, sample rate, units, and shape.
+
+### `BlobReader` / `BlobWriter`
+- `BlobWriter.write_bytes()` stores arbitrary binary payloads on a node.
+- `BlobWriter.write_array()` stores NumPy arrays in `.npy` format inside a blob.
+- `BlobReader.read_bytes()` and `BlobReader.read_array()` restore the payload.
+
+Typical use case:
+- sensor measurement sequences
+- multichannel waveform data
+- binary captures that should be managed by LOTDB instead of external file paths
+
+## Data helpers
+
+### `DataWriter`
+- Stores sensor arrays using a selected backend: `blob` or `zarr`.
+- Attaches a data reference object to a node.
+- Records metadata like sample rate, dtype, shape, dataset path, and custom sensor metadata.
+
+### `DataReader`
+- Reads data ranges in samples or seconds.
+- Provides `iter_blocks(...)` for streaming/block-based consumption.
+- Converts second-based ranges into sample indices using `samplerate_hz`.
+
+### `DataObject`
+- Persistent data reference stored on a node.
+- For `blob`, the payload lives in a ZODB blob.
+- For `zarr`, the node stores a link to a Zarr dataset path on disk.
+
+### `DataNode`
+- Specialized data-oriented node that inherits from `BaseNode`.
+- Stores default data configuration like backend, sample rate, and data attribute name.
+- Convenience methods:
+  - `write_data(...)`
+  - `read_data(...)`
+  - `read_seconds(...)`
+  - `iter_data_blocks(...)`
+
+### `BaseNode.get_data_node()`
+- Creates or upgrades the final node in a path to a `DataNode`.
+- This is the easiest way to create sensor capture nodes with automatic backend setup.
 
 ## Bulk loading helpers
 

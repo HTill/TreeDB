@@ -9,7 +9,7 @@ import transaction
 
 from .files import add_file
 from .paths import PathFileObj
-from .tree import StorageTree, StorageTreeUnconnected
+from .tree import BaseNode, BaseNodeUnconnected
 
 
 def _resolve_parameter_separator(parameter_separator: Optional[str], parameter_seperator: Optional[str]) -> Optional[str]:
@@ -18,18 +18,18 @@ def _resolve_parameter_separator(parameter_separator: Optional[str], parameter_s
     return parameter_separator
 
 
-class StorageTreeConnection:
+class NodeConnection:
     def __init__(
         self,
         database: "LOTDB",
         connection_id: str = "standard",
-        unconnected_tree: Optional[StorageTreeUnconnected] = None,
+        unconnected_tree: Optional[BaseNodeUnconnected] = None,
     ) -> None:
         self.database = database
         self.connection_id = connection_id
         self.unconnected_tree = unconnected_tree
 
-    def __enter__(self) -> StorageTree:
+    def __enter__(self) -> BaseNode:
         return self.database.open_connection(
             unconnected_tree=self.unconnected_tree,
             connection_id=self.connection_id,
@@ -61,6 +61,18 @@ class LOTDB:
             return PathFileObj(root=self.path, file=self.name).filepath
         return self.name
 
+    def _blob_directory(self) -> str:
+        blob_folder = f"{self.name}.blobs"
+        if self.path:
+            return PathFileObj(root=self.path, file=blob_folder).filepath
+        return blob_folder
+
+    def data_store_path(self) -> str:
+        data_folder = f"{self.name}.data.zarr"
+        if self.path:
+            return PathFileObj(root=self.path, file=data_folder).filepath
+        return data_folder
+
     def setup_storage_tree_db(self, new: bool = False, read_only: bool = False):
         if self.path:
             os.makedirs(self.path, exist_ok=True)
@@ -69,25 +81,23 @@ class LOTDB:
             self._storage_filepath(),
             create=new,
             read_only=read_only,
+            blob_dir=self._blob_directory(),
         )
         db = ZODB.DB(storage)
 
         transaction_manager = transaction.TransactionManager()
         conn = db.open(transaction_manager=transaction_manager)
         if not hasattr(conn.root, "stt"):
-            conn.root.stt = StorageTree(key=self.name)
+            conn.root.stt = BaseNode(key=self.name)
             transaction_manager.commit()
         conn.close()
         return db
 
-    def setup_StorageTree_DB(self, new: bool = False, read_only: bool = False):
-        return self.setup_storage_tree_db(new=new, read_only=read_only)
-
     def open_connection(
         self,
-        unconnected_tree: Optional[StorageTreeUnconnected] = None,
+        unconnected_tree: Optional[BaseNodeUnconnected] = None,
         connection_id: str = "standard",
-    ) -> StorageTree:
+    ) -> BaseNode:
         if connection_id in self.conn_dict:
             raise ValueError(f"Connection {connection_id!r} is already open.")
 
@@ -104,9 +114,9 @@ class LOTDB:
     def connection(
         self,
         connection_id: str = "standard",
-        unconnected_tree: Optional[StorageTreeUnconnected] = None,
-    ) -> StorageTreeConnection:
-        return StorageTreeConnection(self, connection_id=connection_id, unconnected_tree=unconnected_tree)
+        unconnected_tree: Optional[BaseNodeUnconnected] = None,
+    ) -> NodeConnection:
+        return NodeConnection(self, connection_id=connection_id, unconnected_tree=unconnected_tree)
 
     def close_connection(self, connection_id: str = "standard") -> None:
         if connection_id not in self.conn_dict:
@@ -215,7 +225,7 @@ class LOTDB:
 
 
 def load_small_files_directory(
-    tree: StorageTree,
+    tree: BaseNode,
     dir_path: str,
     parameter_separator: Optional[str] = None,
     parameter_seperator: Optional[str] = None,
@@ -245,7 +255,7 @@ def load_small_files_directory(
 
 
 def load_small_files_folder(
-    tree: StorageTree,
+    tree: BaseNode,
     folder_path: str,
     parameter_separator: Optional[str] = "_~_",
     parameter_seperator: Optional[str] = None,
@@ -266,6 +276,3 @@ def load_small_files_folder(
         processed += 1
 
     return processed
-
-
-StorageTreeDatabase = LOTDB

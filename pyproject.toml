@@ -24,13 +24,16 @@ io = [
     "pandas",
     "scipy",
 ]
+measurements = [
+    "zarr",
+]
 dev = [
     "pytest",
+    "zarr",
 ]
 
 [tool.setuptools]
 package-dir = {"" = "src"}
-py-modules = ["StorageTree"]
 
 [tool.setuptools.packages.find]
 where = ["src"]

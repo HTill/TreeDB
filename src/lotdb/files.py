@@ -6,7 +6,7 @@ from typing import Any, List, Optional
 from numpy import ndarray, save
 
 from .paths import PathFileObj
-from .tree import StorageTree
+from .tree import BaseNode
 
 
 def _resolve_parameter_separator(parameter_separator: Optional[str], parameter_seperator: Optional[str]) -> Optional[str]:
@@ -16,7 +16,7 @@ def _resolve_parameter_separator(parameter_separator: Optional[str], parameter_s
 
 
 def add_file(
-    node: StorageTree,
+    node: BaseNode,
     filepath_attribute: str = "_pfo_audio_wav",
     root: str = "",
     file: str = "",
@@ -28,7 +28,7 @@ def add_file(
 
 
 def rename_file(
-    node: StorageTree,
+    node: BaseNode,
     filepath_attribute: str = "_pfo_audio_wav",
     new_root: str = "",
     new_file: str = "",
@@ -62,18 +62,18 @@ class FileReader:
         return audio, samplerate
 
     @staticmethod
-    def read_audio_wav(node: StorageTree, filepath_attribute: str = "_pfo_audio_wav"):
+    def read_audio_wav(node: BaseNode, filepath_attribute: str = "_pfo_audio_wav"):
         return FileReader.load_audio(node.ga(filepath_attribute).filepath)
 
     @staticmethod
-    def read_table_txt(node: StorageTree, filepath_attribute: str = "_pfo_table_txt", header: Any = "infer"):
+    def read_table_txt(node: BaseNode, filepath_attribute: str = "_pfo_table_txt", header: Any = "infer"):
         import pandas as pd
 
         filepath = node.ga(filepath_attribute).filepath
         return pd.read_table(filepath, header=header)
 
     @staticmethod
-    def read_array_npy(node: StorageTree, filepath_attribute: str = "_pfo_array_npy"):
+    def read_array_npy(node: BaseNode, filepath_attribute: str = "_pfo_array_npy"):
         from numpy import load
 
         filepath = node.ga(filepath_attribute).filepath
@@ -83,7 +83,7 @@ class FileReader:
         return load(filepath)
 
     @staticmethod
-    def read_array_mat(node: StorageTree, filepath_attribute: str = "_pfo_array_mat"):
+    def read_array_mat(node: BaseNode, filepath_attribute: str = "_pfo_array_mat"):
         from scipy.io import loadmat
 
         filepath = node.ga(filepath_attribute).filepath
@@ -92,7 +92,7 @@ class FileReader:
 
 class FileWriter:
     @staticmethod
-    def setup_tree_directories(root: str, node: StorageTree, pre_parents: Optional[List[str]] = None) -> str:
+    def setup_tree_directories(root: str, node: BaseNode, pre_parents: Optional[List[str]] = None) -> str:
         node_parents = list(pre_parents or [])
         node_parents.extend(node.gps())
 
@@ -107,7 +107,7 @@ class FileWriter:
     @staticmethod
     def create_filename(
         pre_parents: Optional[List[str]],
-        node: StorageTree,
+        node: BaseNode,
         file_type: str,
         parameter_separator: Optional[str] = None,
         parameter_seperator: Optional[str] = None,
@@ -120,7 +120,7 @@ class FileWriter:
     @staticmethod
     def write_audio_wav_into_tree_directories(
         root: str,
-        node: StorageTree,
+        node: BaseNode,
         audio: ndarray,
         samplerate: int,
         filename: Optional[str] = None,
@@ -141,7 +141,7 @@ class FileWriter:
     @staticmethod
     def write_audio_raw_into_tree_directories(
         root: str,
-        node: StorageTree,
+        node: BaseNode,
         audio: ndarray,
         samplerate: int,
         filename: Optional[str] = None,
@@ -166,7 +166,7 @@ class FileWriter:
     @staticmethod
     def write_array_numpy_into_tree_directories(
         root: str,
-        node: StorageTree,
+        node: BaseNode,
         array: ndarray,
         filename: Optional[str] = None,
         pre_parents: Optional[List[str]] = None,
@@ -189,7 +189,7 @@ class FileWriter:
     @staticmethod
     def write_audio_wav(
         root: str,
-        node: StorageTree,
+        node: BaseNode,
         audio: ndarray,
         samplerate: int,
         filename: Optional[str] = None,
@@ -217,7 +217,7 @@ class FileWriter:
     @staticmethod
     def write_audio_raw(
         root: str,
-        node: StorageTree,
+        node: BaseNode,
         audio: ndarray,
         samplerate: int,
         filename: Optional[str] = None,
@@ -247,7 +247,7 @@ class FileWriter:
     @staticmethod
     def write_array_npy(
         root: str,
-        node: StorageTree,
+        node: BaseNode,
         array: ndarray,
         filename: Optional[str] = None,
         pre_parents: Optional[List[str]] = None,
@@ -272,7 +272,7 @@ class FileWriter:
     @staticmethod
     def write_table_txt(
         root: str,
-        node: StorageTree,
+        node: BaseNode,
         dataframe,
         header: bool = True,
         index: bool = False,

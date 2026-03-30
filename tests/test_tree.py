@@ -1,8 +1,8 @@
-from TreeDB import StorageTree
+from lotdb import BaseNode
 
 
 def test_node_creation_and_attribute_access():
-    tree = StorageTree(key="root")
+    tree = BaseNode(key="root")
     node = tree.get_node_path(["artist", "album", "track"])
 
     node.set_attribute("duration", 123)
@@ -13,7 +13,7 @@ def test_node_creation_and_attribute_access():
 
 
 def test_key_rename_updates_parent_mapping():
-    tree = StorageTree(key="root")
+    tree = BaseNode(key="root")
     node = tree.gn("old_name")
 
     node.key = "new_name"
@@ -23,8 +23,8 @@ def test_key_rename_updates_parent_mapping():
 
 
 def test_add_tree_without_copy_keeps_same_object():
-    root = StorageTree(key="root")
-    source = StorageTree(key="child")
+    root = BaseNode(key="root")
+    source = BaseNode(key="child")
 
     added = root.add_tree(source, copy=False)
 
@@ -34,7 +34,7 @@ def test_add_tree_without_copy_keeps_same_object():
 
 
 def test_copy_tree_creates_detached_deep_copy():
-    tree = StorageTree(key="root")
+    tree = BaseNode(key="root")
     leaf = tree.gns(["a", "b"])
     leaf.ga("value", 7)
 
@@ -48,10 +48,10 @@ def test_copy_tree_creates_detached_deep_copy():
 
 
 def test_merge_tree_merges_recursively():
-    base = StorageTree(key="root")
+    base = BaseNode(key="root")
     base.gns(["a", "shared"]).ga("left", 1)
 
-    incoming = StorageTree(key="incoming")
+    incoming = BaseNode(key="incoming")
     incoming.gns(["a", "shared"]).ga("right", 2)
 
     base.merge_tree(incoming)
@@ -62,7 +62,7 @@ def test_merge_tree_merges_recursively():
 
 
 def test_delete_node_only_node_promotes_children():
-    tree = StorageTree(key="root")
+    tree = BaseNode(key="root")
     branch = tree.gns(["branch"])
     branch.gns(["child_one"])
     branch.gns(["child_two"])
@@ -74,7 +74,7 @@ def test_delete_node_only_node_promotes_children():
 
 
 def test_iterate_tree_level_and_leaves():
-    tree = StorageTree(key="root")
+    tree = BaseNode(key="root")
     tree.gns(["a", "b"])
     tree.gns(["a", "c"])
 

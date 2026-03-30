@@ -1,7 +1,9 @@
-from .database import LOTDB, StorageTreeConnection, StorageTreeDatabase, load_small_files_directory, load_small_files_folder
+from .blobs import BlobObject, BlobReader, BlobWriter, add_blob
+from .database import LOTDB, NodeConnection, load_small_files_directory, load_small_files_folder
 from .files import FileReader, FileWriter, add_file, rename_file
+from .measurements import DataObject, DataReader, DataWriter
 from .paths import PathFileObj
-from .tree import StorageTree, StorageTreeUnconnected
+from .tree import BaseNode, BaseNodeUnconnected, DataNode
 from .utils import (
     apply_args_and_kwargs,
     filter_node_list,
@@ -15,14 +17,21 @@ from .utils import (
 )
 
 __all__ = [
-    "StorageTree",
-    "StorageTreeUnconnected",
+    "BaseNode",
+    "BaseNodeUnconnected",
+    "DataNode",
+    "BlobObject",
+    "BlobReader",
+    "BlobWriter",
+    "DataObject",
+    "DataReader",
+    "DataWriter",
     "LOTDB",
-    "StorageTreeConnection",
-    "StorageTreeDatabase",
+    "NodeConnection",
     "PathFileObj",
     "FileReader",
     "FileWriter",
+    "add_blob",
     "add_file",
     "rename_file",
     "load_small_files_directory",
