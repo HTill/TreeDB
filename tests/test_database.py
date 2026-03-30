@@ -73,7 +73,6 @@ def test_read_only_database_reopen_roundtrip(tmp_path):
     tree = reader.open_connection()
 
     assert tree.gns(["collection", "item"]).ga("value") == 42
-    assert reader.db._cache_size == 1
 
     try:
         reader.commit()
@@ -86,7 +85,7 @@ def test_read_only_database_reopen_roundtrip(tmp_path):
     reader.close()
 
 
-def test_read_only_database_can_minimize_cache(tmp_path):
+def test_read_only_database_can_minimize_cache_when_requested(tmp_path):
     db = LOTDB(path=str(tmp_path), name="cache.fs", new=True)
     tree = db.open_connection()
     for idx in range(50):
@@ -107,6 +106,22 @@ def test_read_only_database_can_minimize_cache(tmp_path):
 
     assert after <= before
 
+    reader.close_connection()
+    reader.close()
+
+
+def test_read_only_can_use_native_cache_size_configuration(tmp_path):
+    db = LOTDB(path=str(tmp_path), name="cache_config.fs", new=True)
+    tree = db.open_connection()
+    tree.gns(["collection", "item"]).ga("value", 7)
+    db.commit()
+    db.close_connection()
+    db.close()
+
+    reader = LOTDB(path=str(tmp_path), name="cache_config.fs", read_only=True, cache_size=3)
+    assert reader.db._cache_size == 3
+    tree = reader.open_connection()
+    assert tree.gns(["collection", "item"]).ga("value") == 7
     reader.close_connection()
     reader.close()
 

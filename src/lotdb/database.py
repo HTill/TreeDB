@@ -50,13 +50,11 @@ class LOTDB:
         new: bool = False,
         read_only: bool = False,
         cache_size: int | None = None,
-        auto_minimize_cache: bool | None = None,
     ) -> None:
         self.path = path
         self.name = name
         self.read_only = read_only
-        self.cache_size = 1 if cache_size is None and read_only else (cache_size or 400)
-        self.auto_minimize_cache = read_only if auto_minimize_cache is None else auto_minimize_cache
+        self.cache_size = cache_size
         self.db = self.setup_storage_tree_db(new=new, read_only=read_only)
         self.conn_dict: Dict[str, Tuple[Any, Any]] = {}
 
@@ -87,7 +85,10 @@ class LOTDB:
             read_only=read_only,
             blob_dir=self._blob_directory(),
         )
-        db = ZODB.DB(storage, cache_size=self.cache_size)
+        db_kwargs: dict[str, Any] = {}
+        if self.cache_size is not None:
+            db_kwargs["cache_size"] = self.cache_size
+        db = ZODB.DB(storage, **db_kwargs)
 
         transaction_manager = transaction.TransactionManager()
         conn = db.open(transaction_manager=transaction_manager)
@@ -99,8 +100,6 @@ class LOTDB:
         if not hasattr(conn.root, "stt"):
             conn.root.stt = BaseNode(key=self.name)
             transaction_manager.commit()
-        if self.auto_minimize_cache:
-            conn.cacheMinimize()
         conn.close()
         return db
 
@@ -134,8 +133,6 @@ class LOTDB:
             return
 
         conn, transaction_manager = self.conn_dict[connection_id]
-        if self.auto_minimize_cache:
-            conn.cacheMinimize()
         transaction_manager.abort()
         conn.close()
         del self.conn_dict[connection_id]

@@ -38,3 +38,14 @@ def test_mnt_path_roundtrips_back_to_windows_drive():
 
     assert pfo.as_linux_path() == "/mnt/d/projects/sample.txt"
     assert pfo.as_windows_path() == r"D:\projects\sample.txt"
+
+
+def test_path_file_obj_read_access_does_not_mark_object_changed():
+    pfo = PathFileObj(filepath="/tmp/example/file.wav")
+
+    pfo._p_changed = False
+    _ = pfo.filepath
+    assert pfo._p_changed is False
+
+    _ = pfo.root
+    assert pfo._p_changed is False
