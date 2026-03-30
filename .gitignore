@@ -1,0 +1,28 @@
+.venv/
+__pycache__/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+build/
+dist/
+*.egg-info/
+
+# ZODB / local data
+*.fs
+*.fs.index
+*.fs.lock
+*.fs.tmp
+*.index
+*.lock
+*.tmp
+
+# Python artifacts
+*.pyc
+*.pyo
+*.pyd
+
+# OS/editor files
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
